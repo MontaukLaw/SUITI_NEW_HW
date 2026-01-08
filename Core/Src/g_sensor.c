@@ -27,6 +27,14 @@ int32_t gyro_static_calibration_sum[3] = {0, 0, 0};
 float gyro_raw_static_deviation = 0;
 float accel_raw_static_deviation = 0;
 
+void reset_q_out(void)
+{
+    q_out[0] = 1.0f;
+    q_out[1] = 0.0f;
+    q_out[2] = 0.0f;
+    q_out[3] = 0.0f;
+}
+
 // 10ms执行一次.
 void gsensor_task(void)
 {
@@ -597,7 +605,7 @@ void atk_qmi8658_config_reg(unsigned char low_power)
  */
 uint8_t atk_qmi8658_init(void)
 {
-    delay_ms(2000);
+    // delay_ms(2000);
     atk_qmi8658_reset(); /* 复位传感器 */
 
     if (atk_qmi8658_check_whoami()) /* 检查设备ID是否正确 */
@@ -626,7 +634,8 @@ uint8_t atk_qmi8658_init(void)
 
     init_state_recognition(&atk_qmi8568_read_nbytes);
 
-    qst_vqf_init(0.005f);
+    // qst_vqf_init(0.005f);
+    qst_vqf_init(0.01f);
 
     printf("QMI8658A Ready!\r\n");
 
@@ -808,3 +817,4 @@ void qmi8658_task(void)
         qst_fusion_update(accel_mapped, gyro_mapped, &dt, euler_angle, q_out, line_acc);
     }
 }
+

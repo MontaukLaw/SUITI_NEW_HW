@@ -7,6 +7,8 @@ uint8_t WriteBuffer[1024] = {0};
 
 uint8_t sd_is_sdhc = 0; // 1 = SDHC/SDXC, 0 = SDSC
 
+uint8_t saving_data_to_sd = 0;
+
 static uint8_t SD_SPI_TxRx(uint8_t tx);
 
 static inline uint32_t SD_BlockAddr(uint32_t block)
@@ -615,16 +617,16 @@ uint8_t SD_Get_CardInfo(void)
 
 void SD_SPI_SetSlow(void)
 {
-    HAL_SPI_DeInit(&hspi2);
-    hspi2.Init.BaudRatePrescaler = SPI_BAUDRATEPRESCALER_128; // SPI_BAUDRATEPRESCALER_128; // 或 256
-    HAL_SPI_Init(&hspi2);
+    // HAL_SPI_DeInit(&hspi2);
+    // hspi2.Init.BaudRatePrescaler = SPI_BAUDRATEPRESCALER_128; // SPI_BAUDRATEPRESCALER_128; // 或 256
+    // HAL_SPI_Init(&hspi2);
 }
 
 void SD_SPI_SetFast(void)
 {
-    HAL_SPI_DeInit(&hspi2);
-    hspi2.Init.BaudRatePrescaler = SPI_BAUDRATEPRESCALER_128; // SPI_BAUDRATEPRESCALER_4; // 或 4
-    HAL_SPI_Init(&hspi2);
+    // HAL_SPI_DeInit(&hspi2);
+    // hspi2.Init.BaudRatePrescaler = SPI_BAUDRATEPRESCALER_128; // SPI_BAUDRATEPRESCALER_4; // 或 4
+    // HAL_SPI_Init(&hspi2);
 }
 
 uint8_t SD_Init_SDSC(void)
@@ -638,7 +640,7 @@ uint8_t SD_Init_SDSC(void)
     r1 = SD_Reset_Card();
     if (r1 != SD_IDLE)
     {
-        DBG_PRINTF("CMD0 failed: %02X\r\n", r1);
+        DBG_PRINTF("CMD 0 failed: %02X\r\n", r1);
         goto error;
     }
 
@@ -646,7 +648,7 @@ uint8_t SD_Init_SDSC(void)
     r1 = SD_Initiate_Card();
     if (r1 != SD_OK)
     {
-        DBG_PRINTF("ACMD41 failed\r\n");
+        DBG_PRINTF("ACMD 41 failed\r\n");
         goto error;
     }
 
@@ -654,7 +656,7 @@ uint8_t SD_Init_SDSC(void)
     r1 = SD_Get_CardInfo();
     if (r1 != SD_OK)
     {
-        DBG_PRINTF("CMD9 failed\r\n");
+        DBG_PRINTF("CMD 9 failed\r\n");
         goto error;
     }
 
@@ -666,7 +668,7 @@ uint8_t SD_Init_SDSC(void)
 
     if (r1 != 0x00)
     {
-        DBG_PRINTF("CMD16 failed: %02X\r\n", r1);
+        DBG_PRINTF("CMD 16 failed: %02X\r\n", r1);
         goto error;
     }
 
@@ -713,10 +715,13 @@ void test_sd_card(int32_t block)
     DBG_PRINTF("SD block %lu OK\r\n", block);
 }
 
-static sd_log_page_t sd_log_page = {0};
+// static sd_log_page_t sd_log_page = {0};
 
+#if 0
 void look_for_used_block_test(void)
 {
+
+    static sd_log_page_t sd_log_page = {0};
     // step 1. write blog with 100 sd_log_page_t
 
     for (uint32_t i = 0; i < 100; i++)
@@ -724,11 +729,11 @@ void look_for_used_block_test(void)
         sd_log_page.magic = SD_LOG_MAGIC;
         sd_log_page.seq++;
         sd_log_page.timestamp = HAL_GetTick();
-        for (uint32_t j = 0; j < TOTAL_POINT_NUM; j++)
+        for (uint32_t j = 0; j < TOTAL_USEFUL_POINT_NUM; j++)
         {
-            sd_log_page.data_1.sensor_data[j] = (uint8_t)(i + j);
-            sd_log_page.data_2.sensor_data[j] = (uint8_t)(i + j + 1);
-            sd_log_page.data_3.sensor_data[j] = (uint8_t)(i + j + 2);
+            sd_log_page.data_1.data[j] = (uint8_t)(i + j);
+            sd_log_page.data_2.data[j] = (uint8_t)(i + j + 1);
+            sd_log_page.data_3.data[j] = (uint8_t)(i + j + 2);
         }
 
         // crc
@@ -769,6 +774,7 @@ void look_for_used_block_test(void)
         last_used_block = i;
     }
 }
+#endif
 
 bool sd_scan_step(void)
 {
@@ -795,8 +801,29 @@ bool sd_scan_step(void)
     return false; // 还没扫完
 }
 
+uint32_t get_his_data_count(void)
+{
+    sd_log_page_t temp;
+
+    for (uint32_t i = 0; i < SD_BlockNR; i++)
+    {
+        if (Read_Single_Block(i, (uint8_t *)&temp) != SD_OK)
+        {
+            return i;
+        }
+
+        if (temp.magic == SD_STOP_MAGIC)
+        {
+            return i;
+        }
+    }
+
+    return 0;
+}
+
 void sd_look_for_avliable_block(void)
 {
+
     int32_t last_used_block = -1;
     sd_log_page_t temp_page;
 
@@ -830,11 +857,14 @@ void sd_look_for_avliable_block(void)
     }
 }
 
+#if 0
 void read_test(void)
 {
     // memset(&sd_log_page, 0, sizeof(sd_log_page_t));
     // memset(ReadBuffer, 0, sizeof(ReadBuffer));
     // Read_Single_Block(0, (uint8_t *)&sd_log_page);
+
+    sd_log_page_t sd_log_page;
     Read_Single_Block(0, ReadBuffer);
     memcpy(&sd_log_page, ReadBuffer, sizeof(sd_log_page_t));
 
@@ -848,3 +878,5 @@ void read_test(void)
     uint32_t calc_crc = crc32_soft((uint8_t *)&sd_log_page.data_1, (sizeof(sd_raw_data_t) * 3));
     DBG_PRINTF("Calc CRC: 0x%08lX\r\n", calc_crc);
 }
+#endif
+

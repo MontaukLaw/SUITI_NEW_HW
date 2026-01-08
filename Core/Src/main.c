@@ -106,6 +106,8 @@ int main(void)
 
     delay_init();
 
+    start_control();
+
     // delay_ms(2000);
     crc32_init();
 
@@ -114,14 +116,24 @@ int main(void)
     // look_for_used_block_test();
     // sd_look_for_avliable_block();
     delay_ms(10);
-    read_test();
+
+    // read_test();
 
     check_mems_type();
 
     // 根据不同的MEMS型号进行初始化
     init_mems();
 
-    printf("System Initialized\r\n");
+    // start_uart_rx();
+
+    uart2_rx_dma_start();
+
+    // HAL_ADC_Start_DMA(&hadc2, (uint32_t *)bat_val_dma_buf, ADC2_DMA_BUF_LEN);
+    // HAL_ADC_Start_DMA(&hadc1, (uint32_t *)adc_dma_buffer, ADC_BUFFER_SIZE);
+
+    fill_tx_data();
+
+    DBG_PRINTF("System Initialized\r\n");
 
     // HAL_GPIO_WritePin(LED_B_GPIO_Port, LED_B_Pin, GPIO_PIN_RESET);
     // HAL_GPIO_WritePin(LED_R_GPIO_Port, LED_R_Pin, GPIO_PIN_RESET);
@@ -133,10 +145,37 @@ int main(void)
     while (1)
     {
 
-        HAL_IWDG_Refresh(&hiwdg);
+        feed_iwdg();
+
+        bat_task();
+
+        led_task();
+
+        com_task();
+
+        key_task();
+
+        bl_link_status_check();
+
+        mems_task();
+
+        imu_rest_cmd_task();
+
+        u2_task();
+
+        main_adc_task();
+
+        bl_task();
+
+        his_data_sd_task();
+
+        write_last_block_idx_task();
+
+        show_data_upload_status();
+
+        // sd_card_task();
+
         // usb_test();
-        delay_ms(1000);
-        printf("test\r\n");
 
         /* USER CODE END WHILE */
 
@@ -193,7 +232,6 @@ void SystemClock_Config(void)
 }
 
 /* USER CODE BEGIN 4 */
-
 /* USER CODE END 4 */
 
 /**

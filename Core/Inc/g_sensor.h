@@ -7,5 +7,7 @@ void qmi8658_task(void);
 
 uint8_t atk_qmi8658_check_whoami(void);
 
+void reset_q_out(void);
+
 #endif
 

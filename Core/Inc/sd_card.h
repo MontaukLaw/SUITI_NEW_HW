@@ -1,29 +1,13 @@
 #ifndef _SD_CARD_H_
 #define _SD_CARD_H_
 
-#define COL_NUM 8
-#define ROW_NUM 14
-#define TOTAL_POINT_NUM (COL_NUM * ROW_NUM)
-#define MEMS_FLOAT_BYTES 24
+// #define COL_NUM 8
+// #define ROW_NUM 14
+// #define TOTAL_USEFUL_POINT_NUM (COL_NUM * ROW_NUM)
+// #define MEMS_FLOAT_BYTES 24
 // SDLG
 #define SD_LOG_MAGIC 0x53444c47
-typedef struct
-{
-    uint8_t sensor_data[TOTAL_POINT_NUM];
-    uint8_t mems_data[MEMS_FLOAT_BYTES]; // 6轴
-} sd_raw_data_t;
-
-typedef struct
-{
-    uint32_t magic;     // 固定标志
-    uint32_t seq;       // 递增序号
-    uint32_t timestamp; // 可选
-    uint32_t crc;       // 3个raw_data的crc32
-    sd_raw_data_t data_1;
-    sd_raw_data_t data_2;
-    sd_raw_data_t data_3;
-
-} sd_log_page_t;
+#define SD_STOP_MAGIC 0xDEADBEEF
 
 #define SD_CS_Low() HAL_GPIO_WritePin(FLASH_CS_GPIO_Port, FLASH_CS_Pin, GPIO_PIN_RESET);
 #define SD_CS_High() HAL_GPIO_WritePin(FLASH_CS_GPIO_Port, FLASH_CS_Pin, GPIO_PIN_SET);
@@ -61,6 +45,12 @@ void sd_look_for_avliable_block(void);
 
 void read_test(void);
 
+uint32_t get_his_data_count(void);
+
 extern uint8_t WriteBuffer[];
+
+// extern uint8_t saving_data_to_sd;
+
+extern uint32_t SD_BlockNR;
 
 #endif

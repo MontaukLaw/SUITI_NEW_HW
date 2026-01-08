@@ -47,3 +47,20 @@ void feed_iwdg(void)
     HAL_IWDG_Refresh(&hiwdg);
 #endif
 }
+
+uint16_t ema_u16(uint16_t new_data, uint16_t last_data, uint16_t a_num, uint16_t a_den)
+{
+    return (uint16_t)((a_num * new_data + (a_den - a_num) * last_data) / a_den);
+}
+
+void error_handler(void)
+{
+    // 亮红灯
+    HAL_GPIO_WritePin(LED_R_GPIO_Port, LED_R_Pin, GPIO_PIN_RESET);
+    __disable_irq();
+    while (1)
+    {
+        // 喂狗
+        feed_iwdg();
+    }
+}
